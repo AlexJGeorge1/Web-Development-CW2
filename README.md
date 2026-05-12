@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-All commands are run from the `src/` directory:
+All commands are run from the repository root:
 
 ### Build the index
 
