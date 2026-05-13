@@ -116,3 +116,68 @@ def has_consecutive_positions(position_lists: list[list[int]]) -> bool:
             return True
 
     return False
+
+
+def edit_distance(s1: str, s2: str) -> int:
+    """
+    Compute the Levenshtein edit distance between two strings.
+
+    Uses dynamic programming to find the minimum number of single-character
+    insertions, deletions, or substitutions needed to transform s1 into s2.
+
+    Args:
+        s1: the first string.
+        s2: the second string.
+
+    Returns:
+        The minimum edit distance (0 means the strings are identical).
+    """
+    m, n = len(s1), len(s2)
+
+    prev = list(range(n + 1))
+    curr = [0] * (n + 1)
+
+    for i in range(1, m + 1):
+        curr[0] = i
+        for j in range(1, n + 1):
+            if s1[i - 1] == s2[j - 1]:
+                curr[j] = prev[j - 1]
+            else:
+                curr[j] = 1 + min(prev[j], curr[j - 1], prev[j - 1])
+        prev, curr = curr, prev
+
+    return prev[n]
+
+
+def suggest_terms(index: dict, term: str, max_suggestions: int = 5) -> list[str]:
+    """
+    Suggest index terms similar to the given term using edit distance.
+
+    Scans all words in the index and returns the closest matches,
+    filtered to only include terms within a reasonable edit distance
+    (at most half the length of the query term plus one).
+
+    Args:
+        index: the positional inverted index.
+        term: the misspelled or unrecognised query term.
+        max_suggestions: maximum number of suggestions to return.
+
+    Returns:
+        A list of suggested terms sorted by edit distance (closest first).
+    """
+    if not term or not index:
+        return []
+
+    threshold = max(len(term) // 2 + 1, 2)
+
+    scored = []
+    for word in index:
+        if abs(len(word) - len(term)) > threshold:
+            continue
+        dist = edit_distance(term, word)
+        if 0 < dist <= threshold:
+            scored.append((dist, word))
+
+    scored.sort(key=lambda x: (x[0], x[1]))
+
+    return [word for _, word in scored[:max_suggestions]]

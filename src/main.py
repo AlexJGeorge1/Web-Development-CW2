@@ -21,7 +21,7 @@ import os
 from crawler import crawl
 from indexer import build_index, tokenise
 from storage import save_index, load_index
-from search import and_query, phrase_query
+from search import and_query, phrase_query, suggest_terms
 from ranking import rank
 
 
@@ -100,6 +100,12 @@ def handle_find(index: dict, query_parts: list[str]) -> None:
 
     if not results:
         print("No results found.")
+
+        for term in terms:
+            suggestions = suggest_terms(index, term)
+            if suggestions:
+                print(f"  Did you mean: {', '.join(suggestions)}?")
+
         return
 
     # rank the results using TF-IDF
