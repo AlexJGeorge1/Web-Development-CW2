@@ -2,7 +2,7 @@
 Tests for the search module: AND queries and phrase queries.
 """
 
-from search import and_query, phrase_query, has_consecutive_positions
+from search import and_query, phrase_query, has_consecutive_positions, edit_distance, suggest_terms
 
 
 # shared test index used across multiple tests
@@ -133,3 +133,89 @@ class TestHasConsecutivePositions:
     def test_empty_list(self):
         """Empty input should return False."""
         assert has_consecutive_positions([]) is False
+
+
+class TestEditDistance:
+    """Tests for the edit_distance function."""
+
+    def test_identical_strings(self):
+        """Identical strings should have distance 0."""
+        assert edit_distance("hello", "hello") == 0
+
+    def test_single_insertion(self):
+        """One character difference by insertion."""
+        assert edit_distance("cat", "cats") == 1
+
+    def test_single_deletion(self):
+        """One character difference by deletion."""
+        assert edit_distance("cats", "cat") == 1
+
+    def test_single_substitution(self):
+        """One character difference by substitution."""
+        assert edit_distance("cat", "car") == 1
+
+    def test_completely_different(self):
+        """Completely different strings of same length."""
+        assert edit_distance("abc", "xyz") == 3
+
+    def test_empty_strings(self):
+        """Two empty strings should have distance 0."""
+        assert edit_distance("", "") == 0
+
+    def test_one_empty(self):
+        """Distance from empty to a string is the string length."""
+        assert edit_distance("", "hello") == 5
+        assert edit_distance("hello", "") == 5
+
+    def test_transposition(self):
+        """Swapping two adjacent characters costs 2 edits."""
+        assert edit_distance("ab", "ba") == 2
+
+    def test_longer_example(self):
+        """A known edit distance between two words."""
+        assert edit_distance("kitten", "sitting") == 3
+
+
+class TestSuggestTerms:
+    """Tests for the suggest_terms function."""
+
+    def test_suggests_close_match(self):
+        """Should suggest 'world' when given 'worl'."""
+        suggestions = suggest_terms(SAMPLE_INDEX, "worl")
+        assert "world" in suggestions
+
+    def test_suggests_by_substitution(self):
+        """Should suggest 'hello' when given 'hallo'."""
+        suggestions = suggest_terms(SAMPLE_INDEX, "hallo")
+        assert "hello" in suggestions
+
+    def test_no_exact_match_in_suggestions(self):
+        """An exact match (distance 0) should not appear in suggestions."""
+        suggestions = suggest_terms(SAMPLE_INDEX, "the")
+        assert "the" not in suggestions
+
+    def test_empty_term(self):
+        """An empty term should return no suggestions."""
+        assert suggest_terms(SAMPLE_INDEX, "") == []
+
+    def test_empty_index(self):
+        """An empty index should return no suggestions."""
+        assert suggest_terms({}, "hello") == []
+
+    def test_max_suggestions_limit(self):
+        """Should not return more than max_suggestions."""
+        suggestions = suggest_terms(SAMPLE_INDEX, "th", max_suggestions=2)
+        assert len(suggestions) <= 2
+
+    def test_sorted_by_distance(self):
+        """Closer matches should appear before distant ones."""
+        suggestions = suggest_terms(SAMPLE_INDEX, "worl")
+        if len(suggestions) > 1:
+            d0 = edit_distance("worl", suggestions[0])
+            d1 = edit_distance("worl", suggestions[1])
+            assert d0 <= d1
+
+    def test_very_different_term(self):
+        """A term very different from anything in the index returns empty."""
+        suggestions = suggest_terms(SAMPLE_INDEX, "zzzzzzzzzzz")
+        assert suggestions == []

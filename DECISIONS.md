@@ -148,6 +148,29 @@ of those positions works in the chain.
 Positional indexing is more space-efficient and flexible. It supports arbitrary
 phrase lengths without building separate n-gram indices.
 
+## Decision 9: Levenshtein Distance for Query Suggestions
+
+**Choice**: Use Levenshtein edit distance to suggest similar index terms
+when a search returns no results.
+
+**Rationale**: Edit distance is the standard string similarity metric in
+information retrieval. It captures insertions, deletions, and substitutions,
+which covers the most common types of user typos. The dynamic programming
+implementation runs in O(m * n) time where m and n are string lengths, and
+uses a space-optimised two-row approach to reduce memory from O(m * n) to O(n).
+
+**GenAI consideration**: An AI might suggest simpler approaches like prefix
+matching or Jaccard similarity on character sets. Prefix matching would miss
+typos in the middle of words ("wrold" for "world"). Jaccard similarity loses
+character ordering information. Edit distance handles all typo types.
+
+**Potential pushback**: "Scanning every word in the index is O(V) per query
+term. Won't that be slow for large vocabularies?" Response: The threshold-based
+length filter prunes most candidates before computing edit distance. For the
+50-page corpus (approximately 500 unique terms), 100 suggestion lookups
+complete in under 5 seconds. For a production system with millions of terms,
+a BK-tree or trie-based approach would be more appropriate.
+
 ## Summary of Limitations
 
 1. **No robots.txt parsing**: hardcode the politeness delay rather than

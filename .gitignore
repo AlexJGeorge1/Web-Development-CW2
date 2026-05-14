@@ -165,4 +165,4 @@ config.plist
 
 # Custom
 .claude/
-search-engine/GIT_WORKFLOW.md
+GIT_WORKFLOW.md
